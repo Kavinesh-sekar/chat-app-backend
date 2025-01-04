@@ -7,6 +7,7 @@ const connectDB = require('./config/db');
 const mongoose = require('mongoose');
 const authRoutes = require('./routes/authroute');
 const messageRoutes = require('./routes/messageRoute');
+const groupRoute = require('./routes/groupRoute');
 
 // Load environment variables
 dotenv.config();
@@ -28,6 +29,8 @@ connectDB();
 app.use('/api/auth', authRoutes);
 
 app.use('/api/messages', messageRoutes);
+
+app.use('/api/groups',groupRoute)
 
 
 
