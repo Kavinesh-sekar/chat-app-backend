@@ -16,9 +16,7 @@ const messageSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    mediaUrl: {
-      type: String, // For media files (images/videos)
-    },
+    mediaUrls: [String],
   },
   {
     timestamps: true, // Automatically adds `createdAt` and `updatedAt`

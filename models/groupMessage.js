@@ -13,7 +13,7 @@ const GroupmessageSchema = new mongoose.Schema(
         required: true,
       },
       content: { type: String, required: true },
-      mediaUrl: { type: String },
+      mediaUrls: [String],
     },
     { timestamps: true }
   );
