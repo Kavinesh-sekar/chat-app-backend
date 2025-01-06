@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const {generateAccessToken,generateRefreshToken} = require('../utilites/tokenUtils');
 const RefreshToken = require('../models/refreshToken');
+const bcrypt = require('bcrypt');
 const register = async (req, res) => {
   try {
    
@@ -29,7 +30,7 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    console.log('inside login');
+    console.log('inside login',req.body);
     
 
     const user = await User.findOne({ email });
@@ -41,9 +42,11 @@ const login = async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     // const isPasswordCorrect = await User.comparePassword(password);
-    if(password !=user.password){
-        res.status(400).json({message:'Invalid credentials'});
+    const isPasswordCorrect = await bcrypt.compare(password, user.password);
+    if (!isPasswordCorrect) {
+      return res.status(400).json({ message: 'Invalid credentials' });
     }
+
     else{
 
       const accessToken = generateAccessToken(user.id);
@@ -61,8 +64,8 @@ const login = async (req, res) => {
   
 
     res.status(200).json({ message: 'Login successful', 
-      accessToken :accessToken,
-      refreshToken :refreshToken
+      'accessToken' :accessToken,
+      'refreshToken' :refreshToken
     });}
   } catch (error) {
     console.error('Registration error:', error.message);
@@ -74,25 +77,40 @@ const login = async (req, res) => {
 
 const RefreshTokenAccess = async(req,res)=>{
   try {
-    const { token } = req.body;
+    const { refreshToken } = req.body;
 
-    if (!token) {
+    // console.log('ffffffffffffffffff',req.body);
+    
+
+    if (!refreshToken) {
       return res.status(400).json({ message: 'Refresh token is required' });
     }
 
     // Validate the refresh token
-    const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
-    const storedToken = await RefreshToken.findOne({ token });
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    // const storedToken = await RefreshToken.findOne({ refreshToken });
 
-    if (!storedToken) {
-      return res.status(403).json({ message: 'Invalid refresh token' });
-    }
+    // console.log('decoded',decoded);
+    
+
+    // if (!storedToken) {
+    //   return res.status(403).json({ message: 'Invalid refresh token' });
+    // }
 
     // Generate a new access token
     const newAccessToken = generateAccessToken(decoded.id);
 
     res.status(200).json({ accessToken: newAccessToken });
-  } catch (error) {
+  } catch (error) { console.error('Refresh token error:', error);
+
+    if (error.name === 'TokenExpiredError') {
+      return res.status(403).json({
+        message: 'Refresh token expired',
+        error: 'TokenExpiredError',
+        expiredAt: error.expiredAt, // Optional: Provide the expiration time
+      });
+    }
+
     res.status(403).json({ message: 'Invalid or expired refresh token' });
   }
 };
@@ -100,13 +118,17 @@ const RefreshTokenAccess = async(req,res)=>{
 
 const getUserDashboard = async (req, res) => {
   try {
+    const { userId } = req.params;
+
+    console.log('userId',userId);
+    
     // const { userId } = req.user; // Get the logged-in user's ID from the authentication middleware
 
-    // Fetch all users (excluding password for security reasons)
+    // Fetch al l users (excluding password for security reasons)
     const allUsers = await User.find({}, 'userName email');
 
     // Fetch groups the logged-in user is part of
-    const user = await User.findById('677959e9049004c87d968a54').populate({
+    const user = await User.findById(userId).populate({
       path: 'groups',
       select: 'groupName groupDesc groupMembers',
     });

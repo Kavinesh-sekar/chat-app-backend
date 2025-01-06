@@ -182,6 +182,7 @@ const sendMessage = async (req, res) => {
 
 // Get messages between two users
 const getMessages = async (req, res) => {
+  
   const { senderId, receiverId } = req.params;
 
   try {

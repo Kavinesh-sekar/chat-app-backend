@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.post('/register', register);
 router.post('/login', login);
-router.get('/user-dashBoard',authedicate, getUserDashboard);
+router.get('/user-dashBoard/:userId',authedicate, getUserDashboard);
 router.post('/refresh-token', RefreshTokenAccess);
 
 
