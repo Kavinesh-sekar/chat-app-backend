@@ -8,6 +8,9 @@ const cloudinary = require('../config/cloudinary');
 const CreateGroup = async(req,res)=>{
     const { groupName, groupDesc, groupCreatedBy, groupMembers, mediaUrl } = req.body;
 
+    console.log('req.body',req.body);
+    
+
     try {
       const group = new Group({
         groupName,
@@ -25,6 +28,8 @@ const CreateGroup = async(req,res)=>{
   
       res.status(201).json(savedGroup);
     } catch (err) {
+      console.log('create grp error',err);
+      
       res.status(500).json({ error: 'Failed to create group', details: err.message });
     }
 }
@@ -49,15 +54,18 @@ const JoinGroup =  async(req,res)=>{
 }
 
 const SendGroupMessage = async(req,res)=>{
-    const { sender, group, content } = req.body;
-    console.log('ggggggg',group);
+    const { senderId, groupId, content } = req.body;
+    console.log('ggggggg',req.body);
+
+    console.log('group id',req.body);
+
 
     // console.log('req body', req);
     
     
     const files = req.files;
     console.log('Received files:', files);
-    const groups = await Group.findById(group);
+    const groups = await Group.findById(groupId);
     if (!groups) {
       console.log('gggggggggggggggggg not gound');
       
@@ -104,8 +112,8 @@ const SendGroupMessage = async(req,res)=>{
         }
     try{
     const message = new groupMessage({
-      sender,
-      group: group,
+      sender :senderId,
+      group: groupId,
       content,
       mediaUrls,
     });

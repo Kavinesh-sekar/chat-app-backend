@@ -1,8 +1,11 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+const Group = require('../models/groups')
 const {generateAccessToken,generateRefreshToken} = require('../utilites/tokenUtils');
 const RefreshToken = require('../models/refreshToken');
 const bcrypt = require('bcrypt');
+const cloudinary = require('../config/cloudinary');
+
 const register = async (req, res) => {
   try {
    
@@ -10,6 +13,8 @@ const register = async (req, res) => {
 
     const {userName ,email,password} = req.body;
     
+    const files = req.files;
+  console.log('Received files:', files);
 
     // Check if the user already exists
     const existingUser = await User.findOne({ email });
@@ -17,8 +22,47 @@ const register = async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/avi', 'video/mov'];
+
+ // Filter files based on MIME types
+ const validFiles = files.filter((file) => allowedMimeTypes.includes(file.mimetype));
+
+ if (validFiles.length !== files.length) {
+   return res.status(400).json({
+     error: 'Only image and video files are allowed.',
+   });
+ }
+
+  let mediaUrls = [];
+     if (files && files.length > 0) {
+       console.log('Processing file uploads...');
+       const uploadPromises = files.map((file) =>
+         new Promise((resolve, reject) => {
+           cloudinary.uploader.upload_stream(
+             {
+               resource_type: 'auto',
+               folder: 'ProfilePics',
+             },
+             (error, result) => {
+               if (error) {
+                 console.error('Error uploading file to Cloudinary:', error);
+                 reject(error);
+               } else {
+                 console.log('File uploaded successfully:', result.secure_url);
+                 resolve(result.secure_url);
+               }
+             }
+           ).end(file.buffer); // Pass the file buffer
+         })
+       );
+ 
+       mediaUrls = await Promise.all(uploadPromises);
+       console.log('Uploaded media URLs:', mediaUrls);
+     }
+ 
+
     // Save the new user
-    const newUser = new User({ userName, email, password });
+    const newUser = new User({ userName, email, password ,mediaUrls});
     await newUser.save();
     res.status(201).json({ message: 'User registered successfully' });
   } catch (error) {
@@ -116,27 +160,65 @@ const RefreshTokenAccess = async(req,res)=>{
 };
 
 
+// const getUserDashboard = async (req, res) => {
+//   try {
+//     const { userId } = req.params;
+
+//     console.log('userId',userId);
+    
+//     // const { userId } = req.user; // Get the logged-in user's ID from the authentication middleware
+
+//     // Fetch al l users (excluding password for security reasons)
+//     const allUsers = await User.find({}, 'userName email');
+
+//     // Fetch groups the logged-in user is part of
+//     const user = await User.findById(userId).populate({
+//       path: 'groups',
+//       select: 'groupName groupDesc groupMembers',
+//     });
+
+//     if (!user) {
+//       return res.status(404).json({ message: 'User not found' });
+//     }
+
+//     const userGroups = user.groups.map(group => ({
+//       groupId: group._id,
+//       groupName: group.groupName,
+//       groupDesc: group.groupDesc,
+//       membersCount: group.groupMembers.length,
+//     }));
+
+//     // Combine the response
+//     const response = {
+//       allUsers,
+//       userGroups,
+//     };
+
+//     res.status(200).json(response);
+//   } catch (error) {
+//     console.error('Error fetching user dashboard:', error.message);
+//     res.status(500).json({ message: 'Error fetching user dashboard', error });
+//   }
+// };
+
 const getUserDashboard = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    console.log('userId',userId);
-    
-    // const { userId } = req.user; // Get the logged-in user's ID from the authentication middleware
+    // Fetch all users (excluding passwords)
+    const allUsers = await User.find({}, 'userName email mediaUrls');
 
-    // Fetch al l users (excluding password for security reasons)
-    const allUsers = await User.find({}, 'userName email');
-
-    // Fetch groups the logged-in user is part of
-    const user = await User.findById(userId).populate({
-      path: 'groups',
-      select: 'groupName groupDesc groupMembers',
+    // Fetch all groups with their members
+    const allGroups = await Group.find({}).populate({
+      path: 'groupMembers',
+      select: 'userName email',
     });
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    // Check if the user exists
+    const user = await User.findById(userId).populate('groups', 'groupName groupDesc groupMembers');
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
+    // Create a list of user groups
     const userGroups = user.groups.map(group => ({
       groupId: group._id,
       groupName: group.groupName,
@@ -144,16 +226,23 @@ const getUserDashboard = async (req, res) => {
       membersCount: group.groupMembers.length,
     }));
 
-    // Combine the response
-    const response = {
-      allUsers,
-      userGroups,
-    };
+    // Add membership status to all groups
+    const groupsWithMembershipStatus = allGroups.map(group => ({
+      groupId: group._id,
+      groupName: group.groupName,
+      groupDesc: group.groupDesc,
+      isMember: group.groupMembers.some(member => member._id.toString() === userId),
+      members: group.groupMembers.map(member => ({
+        memberId: member._id,
+        userName: member.userName,
+        email: member.email,
+      })),
+    }));
 
-    res.status(200).json(response);
+    res.status(200).json({ allUsers, userGroups, groupsWithMembershipStatus });
   } catch (error) {
-    console.error('Error fetching user dashboard:', error.message);
-    res.status(500).json({ message: 'Error fetching user dashboard', error });
+    console.error('Error fetching dashboard:', error.message);
+    res.status(500).json({ message: 'Error fetching dashboard', error });
   }
 };
 

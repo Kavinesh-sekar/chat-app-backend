@@ -18,7 +18,7 @@ router.post('/join_group',JoinGroup);
 
 router.post('/send_message',upload.array('files'),SendGroupMessage);
 
-router.get('/gg/:groupId',ReceiveMessage);
+router.get('/receieve/:groupId',ReceiveMessage);
 
 
 module.exports = router;
