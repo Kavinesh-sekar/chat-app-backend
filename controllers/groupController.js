@@ -139,6 +139,9 @@ const ReceiveMessage = async (req, res) => {
       .find({ group: groupId })
       .sort({ createdAt: 1 })  // Sort messages by date in ascending order
       .populate('sender', 'userName');// Populate the sender field to include sender's name
+
+      console.log('message',messages);
+      
     
     // Send the messages as a response
     res.status(200).json(messages);
@@ -148,6 +151,32 @@ const ReceiveMessage = async (req, res) => {
   }
 }
 
+const groupMember = async(req,res)=>{
+  const { groupId } = req.params;
+  
+  console.log('groupId:', groupId);
+  try{
+    const group = await Group.findById(groupId).populate('groupMembers', 'userName mediaUrls');
 
-module.exports = {CreateGroup,JoinGroup,SendGroupMessage,ReceiveMessage}
+    console.log('grrrr',group);
+    
+
+    if (!group) {
+      return res.status(404).json({ error: 'Group not found' });
+    }
+
+    res.status(200).json({ 
+      groupName: group.groupName,
+      groupDescription: group.groupDesc,
+      members: group.groupMembers 
+    });
+
+  }catch(error){
+    console.log('erros',error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+
+module.exports = {CreateGroup,JoinGroup,SendGroupMessage,ReceiveMessage,groupMember}
   

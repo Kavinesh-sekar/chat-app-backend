@@ -60,6 +60,9 @@ const register = async (req, res) => {
        console.log('Uploaded media URLs:', mediaUrls);
      }
  
+     if(mediaUrls.length >0){
+      mediaUrls = mediaUrls[0];
+     }
 
     // Save the new user
     const newUser = new User({ userName, email, password ,mediaUrls});

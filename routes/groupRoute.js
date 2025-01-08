@@ -1,5 +1,5 @@
 const express = require('express');
-const {CreateGroup,ReceiveMessage,JoinGroup,SendGroupMessage}= require('../controllers/groupController');
+const {CreateGroup,ReceiveMessage,JoinGroup,SendGroupMessage,groupMember}= require('../controllers/groupController');
 
 const router = express.Router();
 const multer = require('multer');
@@ -19,6 +19,8 @@ router.post('/join_group',JoinGroup);
 router.post('/send_message',upload.array('files'),SendGroupMessage);
 
 router.get('/receieve/:groupId',ReceiveMessage);
+
+router.get('/members/:groupId',groupMember);
 
 
 module.exports = router;
