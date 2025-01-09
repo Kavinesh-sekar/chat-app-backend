@@ -151,31 +151,64 @@ const ReceiveMessage = async (req, res) => {
   }
 }
 
-const groupMember = async(req,res)=>{
-  const { groupId } = req.params;
+// const groupMember = async(req,res)=>{
+//   const { groupId } = req.params;
   
-  console.log('groupId:', groupId);
-  try{
-    const group = await Group.findById(groupId).populate('groupMembers', 'userName mediaUrls');
+//   console.log('groupId:', groupId);
+//   try{
+//     const group = await Group.findById(groupId).populate('groupMembers', 'userName mediaUrls');
 
-    console.log('grrrr',group);
+//     console.log('grrrr',group);
     
+
+//     if (!group) {
+//       return res.status(404).json({ error: 'Group not found' });
+//     }
+
+//     res.status(200).json({ 
+//       groupName: group.groupName,
+//       groupDescription: group.groupDesc,
+//       members: group.groupMembers 
+//     });
+
+//   }catch(error){
+//     console.log('erros',error);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// }
+
+
+const groupMember = async (req, res) => {
+  const { groupId } = req.params;
+
+  console.log('groupId:', groupId);
+  try {
+    // Fetch the group and populate only `groupMembers` with required fields
+    const group = await Group.findById(groupId).populate('groupMembers', 'userName _id');
 
     if (!group) {
       return res.status(404).json({ error: 'Group not found' });
     }
 
-    res.status(200).json({ 
+    // Extract group members
+    const members = group.groupMembers.map((member) => ({
+      id: member._id,
+      userName: member.userName,
+    }));
+
+    // Respond with the members
+    res.status(200).json({
+      groupId: group._id,
       groupName: group.groupName,
       groupDescription: group.groupDesc,
-      members: group.groupMembers 
+      members,
     });
-
-  }catch(error){
-    console.log('erros',error);
+  } catch (error) {
+    console.error('Error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
-}
+};
+
 
 
 module.exports = {CreateGroup,JoinGroup,SendGroupMessage,ReceiveMessage,groupMember}
