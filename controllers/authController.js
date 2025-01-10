@@ -211,17 +211,16 @@ const getUserDashboard = async (req, res) => {
     // Fetch all users (excluding passwords)
     const allUsers = await User.find({}, 'userName email mediaUrls');
 
-    // Fetch all groups with their members
     const allGroups = await Group.find({}).populate({
       path: 'groupMembers',
       select: 'userName email',
     });
 
-    // Check if the user exists
+
     const user = await User.findById(userId).populate('groups', 'groupName groupDesc groupMembers');
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // Create a list of user groups
+
     const userGroups = user.groups.map(group => ({
       groupId: group._id,
       groupName: group.groupName,
@@ -229,7 +228,7 @@ const getUserDashboard = async (req, res) => {
       membersCount: group.groupMembers.length,
     }));
 
-    // Add membership status to all groups
+
     const groupsWithMembershipStatus = allGroups.map(group => ({
       groupId: group._id,
       groupName: group.groupName,

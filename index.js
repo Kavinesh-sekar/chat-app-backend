@@ -11,29 +11,29 @@ const groupRoute = require('./routes/groupRoute');
 const helmet = require('helmet');
 
 const app = express();
-app.use(helmet());
 
-// Load environment variables
+
+
 dotenv.config();
 
-// Initialize Express app and HTTP server
+
 
 const server = http.createServer(app);
 
-// Initialize Socket.IO with CORS
 const io = new Server(server, {
   cors: {
-    origin: '*', // Replace with your frontend URL for production
+    origin: '*', 
     methods: ['GET', 'POST']
   }
 });
 
-// Middleware
-app.use(express.json()); // Parse JSON request bodies
+
+app.use(express.json()); 
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
-  origin: '*', // Update for production
+  origin: '*', 
 }));
+app.use(helmet());
 
 // Connect to Database
 connectDB()
@@ -45,27 +45,27 @@ app.use('/api/auth', authRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/groups', groupRoute);
 
-// Socket.IO logic
+// Socket.IO 
 io.on('connection', (socket) => {
   console.log('A user connected:', socket.id);
 
-  // Handle joining a room for one-to-one private chat
+ 
   socket.on('join-room', ({ userId, chatPartnerId, groupId }) => {
     if (groupId) {
-      // Join a group room
+     
       socket.join(groupId);
       console.log(`User ${userId} joined group ${groupId}`);
     } else {
-      // Join a private chat room
+      
       const roomId = [userId, chatPartnerId].sort().join('-');
       socket.join(roomId);
       console.log(`User ${userId} joined private room ${roomId}`);
     }
   });
 
-  // Handle sending private messages
+  
   socket.on('send-message', ({ roomId, message }) => {
-    io.to(roomId).emit('receive-message', message); // Broadcast message to private room
+    io.to(roomId).emit('receive-message', message); 
     console.log(`Private message sent to room ${roomId}:`, message);
   });
 
@@ -86,12 +86,12 @@ io.on('connection', (socket) => {
   });
 });
 
-// Default route
+
 app.get('/', (req, res) => {
   res.send('Socket.IO Chat Server is running');
 });
 
-// Start the server
+
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
