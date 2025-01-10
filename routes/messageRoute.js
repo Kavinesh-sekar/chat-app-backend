@@ -5,6 +5,10 @@ const multer = require('multer');
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
+const { authedicate } = require('../middlewares/authMiddleware');
+router.use(authedicate);
+
+
 
 // Route to send a message with single or multiple files
 router.post('/send',upload.array('files', 10), sendMessage);  // 'any' allows for single or multiple files
